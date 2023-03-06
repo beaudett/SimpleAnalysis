@@ -28,8 +28,8 @@ SimpleAnalyzer::SimpleAnalyzer(const edm::ParameterSet& pset)
     h_dRPhoPFcand_NeuHad_unCleaned_[1] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedBarrel", "dR(pho,cand) Neutral Hadrons :  Barrel", 50, 0., 0.7);
     h_dRPhoPFcand_NeuHad_unCleaned_[2] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedEndcap", "dR(pho,cand) Neutral Hadrons :  Endcap", 50, 0., 0.7);
     h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[0] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedAll", "dR(pho,cand) Neutral Hadrons :  All Ecal", 50 , 0., 0.7);
-    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[1] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedBarrel", "dR(pho,cand) Neutral Hadrons :  Barrel", 50, 0., 0.7);
-    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[2] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedEndcap", "dR(pho,cand) Neutral Hadrons :  Endcap", 50, 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[1] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedBarrel", "dR(pho,cand) Neutral Hadrons :  Barrel central", 50, 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[2] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedEndcap", "dR(pho,cand) Neutral Hadrons :  Barrel edge", 50, 0., 0.7);
  }
 
 SimpleAnalyzer::~SimpleAnalyzer() {}
@@ -113,7 +113,7 @@ void SimpleAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& esup) {
           h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[0]->Fill(dR);
           if (std::abs(mcEta_)<barrelEtaLimit_)
             h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[1]->Fill(dR);
-          else
+          else if(std::abs(mcEta_)<1.479 )
             h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[2]->Fill(dR);
           }
         }
