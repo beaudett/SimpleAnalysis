@@ -24,12 +24,12 @@ SimpleAnalyzer::SimpleAnalyzer(const edm::ParameterSet& pset)
     minPhoEtCut_ = pset.getParameter<double>("minPhoEtCut");
     barrelEtaLimit_ = pset.getParameter<double>("barrelEtaLimit");
     edm::Service<TFileService> fs;
-    h_dRPhoPFcand_NeuHad_unCleaned_[0] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedAll", "dR(pho,cand) Neutral Hadrons :  All Ecal", 50 , 0., 0.7);
-    h_dRPhoPFcand_NeuHad_unCleaned_[1] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedBarrel", "dR(pho,cand) Neutral Hadrons :  Barrel", 50, 0., 0.7);
-    h_dRPhoPFcand_NeuHad_unCleaned_[2] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedEndcap", "dR(pho,cand) Neutral Hadrons :  Endcap", 50, 0., 0.7);
-    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[0] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedAll", "dR(pho,cand) Neutral Hadrons :  All Ecal", 50 , 0., 0.7);
-    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[1] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedBarrel", "dR(pho,cand) Neutral Hadrons :  Barrel central", 50, 0., 0.7);
-    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[2] = fs->make<TH1F>("dRPhoPFcand_NeuHad_unCleanedEndcap", "dR(pho,cand) Neutral Hadrons :  Barrel edge", 50, 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_[0] = fs->make<TH1F>("dRPhoPFcand_all", "dR(pho,cand) Neutral Hadrons :  All Ecal", 50 , 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_[1] = fs->make<TH1F>("dRPhoPFcand_Barrel", "dR(pho,cand) Neutral Hadrons :  Barrel", 50, 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_[2] = fs->make<TH1F>("dRPhoPFcand_Endcap", "dR(pho,cand) Neutral Hadrons :  Endcap", 50, 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[0] = fs->make<TH1F>("dRPhoPFcand_all_check", "dR(pho,cand) Neutral Hadrons :  All Ecal", 50 , 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[1] = fs->make<TH1F>("dRPhoPFcand_Barrel_EtaR", "dR(pho,cand) Neutral Hadrons :  Barrel central", 50, 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[2] = fs->make<TH1F>("dRPhoPFcand_Barrel_Edge", "dR(pho,cand) Neutral Hadrons :  Barrel edge", 50, 0., 0.7);
  }
 
 SimpleAnalyzer::~SimpleAnalyzer() {}
