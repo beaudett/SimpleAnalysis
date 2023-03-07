@@ -45,6 +45,10 @@ private:
 
   TH1F* h_dRPhoPFcand_NeuHad_unCleaned_[3];
   TH1F* h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[3];
+  TH1F* h_EtaCheck_[2];
+  TH1F * h_Pho_Eta_; 
+  TH1F * h_Pho_Eta_Barrel_;
+  TH1F * h_NeutralHadron_; 
 };
 
 #endif 

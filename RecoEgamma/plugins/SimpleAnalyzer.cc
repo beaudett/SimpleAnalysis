@@ -24,10 +24,16 @@ SimpleAnalyzer::SimpleAnalyzer(const edm::ParameterSet& pset)
     minPhoEtCut_ = pset.getParameter<double>("minPhoEtCut");
     barrelEtaLimit_ = pset.getParameter<double>("barrelEtaLimit");
     edm::Service<TFileService> fs;
+    h_Pho_Eta_ = fs->make<TH1F>("EtaPhotons", "Eta photons", 100 , -2.5, 2.5);
+    h_Pho_Eta_Barrel_ = fs->make<TH1F>("EtaPhotonsBarrel", "Eta photons barrel", 100 , -2.5, 2.5);
+    h_EtaCheck_[0] = fs->make<TH1F>("EtaPhotonsCheckCentral", "Eta photons central", 100 , -2.5, 2.5);
+    h_EtaCheck_[1] = fs->make<TH1F>("EtaPhotonsCheckEdge", "Eta photons edge", 100 , -2.5, 2.5);
+    h_NeutralHadron_ = fs->make<TH1F>("NeutralHadronEta", "Eta neutral hadrons", 30 , -3., 3.)  ; 
+
     h_dRPhoPFcand_NeuHad_unCleaned_[0] = fs->make<TH1F>("dRPhoPFcand_all", "dR(pho,cand) Neutral Hadrons :  All Ecal", 50 , 0., 0.7);
     h_dRPhoPFcand_NeuHad_unCleaned_[1] = fs->make<TH1F>("dRPhoPFcand_Barrel", "dR(pho,cand) Neutral Hadrons :  Barrel", 50, 0., 0.7);
     h_dRPhoPFcand_NeuHad_unCleaned_[2] = fs->make<TH1F>("dRPhoPFcand_Endcap", "dR(pho,cand) Neutral Hadrons :  Endcap", 50, 0., 0.7);
-    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[0] = fs->make<TH1F>("dRPhoPFcand_all_check", "dR(pho,cand) Neutral Hadrons :  All Ecal", 50 , 0., 0.7);
+    h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[0] = fs->make<TH1F>("dRPhoPFcand_Barrel_all", "dR(pho,cand) Neutral Hadrons :  Barrel ", 50 , 0., 0.7);
     h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[1] = fs->make<TH1F>("dRPhoPFcand_Barrel_EtaR", "dR(pho,cand) Neutral Hadrons :  Barrel central", 50, 0., 0.7);
     h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[2] = fs->make<TH1F>("dRPhoPFcand_Barrel_Edge", "dR(pho,cand) Neutral Hadrons :  Barrel edge", 50, 0., 0.7);
  }
@@ -98,30 +104,40 @@ void SimpleAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& esup) {
       
     if (matched) {
       reco::PhotonRef matchingPho(reco::PhotonRef(photonHandle,iMatch));
+      h_Pho_Eta_->Fill(matchingPho->eta());
+      if(std::abs(mcEta_)<1.479 )
+        h_Pho_Eta_Barrel_->Fill(matchingPho->eta());
       for (unsigned int lCand = 0; lCand < pfCandidateHandle->size(); lCand++) {
         reco::PFCandidateRef pfCandRef(reco::PFCandidateRef(pfCandidateHandle, lCand));
+        if (pfCandRef->particleId()== reco::PFCandidate::h0)
+          h_NeutralHadron_->Fill(pfCandRef->eta());
         float dR = deltaR(matchingPho->eta(), matchingPho->phi(), pfCandRef->eta(), pfCandRef->phi());
         if (dR < 0.4) {
           reco::PFCandidate::ParticleType type = pfCandRef->particleId();
         if (type == reco::PFCandidate::h0) {
           h_dRPhoPFcand_NeuHad_unCleaned_[0]->Fill(dR);
-          if (std::abs(mcEta_)<1.479)
+          if (matchingPho->isEB())
             h_dRPhoPFcand_NeuHad_unCleaned_[1]->Fill(dR);
           else
             h_dRPhoPFcand_NeuHad_unCleaned_[2]->Fill(dR);
           
-          h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[0]->Fill(dR);
-          if (std::abs(mcEta_)<barrelEtaLimit_)
-            h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[1]->Fill(dR);
-          else if(std::abs(mcEta_)<1.479 )
-            h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[2]->Fill(dR);
+          if (matchingPho->isEB() ) {
+            h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[0]->Fill(dR);
+            if (std::abs(mcEta_)<barrelEtaLimit_){
+              h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[1]->Fill(dR);
+              h_EtaCheck_[0]->Fill(mcEta_);
+              }
+           else {
+              h_dRPhoPFcand_NeuHad_unCleaned_EtaRestricted_[2]->Fill(dR);          
+              h_EtaCheck_[1]->Fill(mcEta_);
+              }  
+            }
           }
-        }
-      } 
-    }   
-  } 
+        } 
+      }   
+    } 
+  }
 }
-
 
 
 float SimpleAnalyzer::etaTransformation(float EtaParticle, float Zvertex) {
