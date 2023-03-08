@@ -29,6 +29,11 @@ SimpleAnalyzer::SimpleAnalyzer(const edm::ParameterSet& pset)
     h_EtaCheck_[0] = fs->make<TH1F>("EtaPhotonsCheckCentral", "Eta photons central", 100 , -2.5, 2.5);
     h_EtaCheck_[1] = fs->make<TH1F>("EtaPhotonsCheckEdge", "Eta photons edge", 100 , -2.5, 2.5);
     h_NeutralHadron_ = fs->make<TH1F>("NeutralHadronEta", "Eta neutral hadrons", 30 , -3., 3.)  ; 
+    h_NeutralHadronEtaPt_ = fs->make<TH2F>("NeutralHadronEtaPt", "Eta neutral hadrons", 30 , -3., 3.,100,0,20.)  ; 
+    h_NeutralHadronConeMultiplicity_[0] = fs->make<TH1F>("NHadrons_all", "Hadron multiplicity all", 10 , -0.5, 9.5);   
+    h_NeutralHadronConeMultiplicity_[1] = fs->make<TH1F>("NHadrons_central", "Hadron multiplicity barrel central", 10 , -0.5, 9.5);   
+    h_NeutralHadronConeMultiplicity_[2] = fs->make<TH1F>("NHadrons_edge", "Hadron multiplicity barrel edge", 10 , -0.5, 9.5);   
+
 
     h_dRPhoPFcand_NeuHad_unCleaned_[0] = fs->make<TH1F>("dRPhoPFcand_all", "dR(pho,cand) Neutral Hadrons :  All Ecal", 50 , 0., 0.7);
     h_dRPhoPFcand_NeuHad_unCleaned_[1] = fs->make<TH1F>("dRPhoPFcand_Barrel", "dR(pho,cand) Neutral Hadrons :  Barrel", 50, 0., 0.7);
@@ -107,14 +112,18 @@ void SimpleAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& esup) {
       h_Pho_Eta_->Fill(matchingPho->eta());
       if(std::abs(mcEta_)<1.479 )
         h_Pho_Eta_Barrel_->Fill(matchingPho->eta());
+      unsigned nhadCounter=0;
       for (unsigned int lCand = 0; lCand < pfCandidateHandle->size(); lCand++) {
         reco::PFCandidateRef pfCandRef(reco::PFCandidateRef(pfCandidateHandle, lCand));
-        if (pfCandRef->particleId()== reco::PFCandidate::h0)
+        if (pfCandRef->particleId()== reco::PFCandidate::h0) {
           h_NeutralHadron_->Fill(pfCandRef->eta());
+          h_NeutralHadronEtaPt_ ->Fill(pfCandRef->eta(),pfCandRef->pt())  ; 
+        }
         float dR = deltaR(matchingPho->eta(), matchingPho->phi(), pfCandRef->eta(), pfCandRef->phi());
         if (dR < 0.4) {
           reco::PFCandidate::ParticleType type = pfCandRef->particleId();
         if (type == reco::PFCandidate::h0) {
+          ++nhadCounter;
           h_dRPhoPFcand_NeuHad_unCleaned_[0]->Fill(dR);
           if (matchingPho->isEB())
             h_dRPhoPFcand_NeuHad_unCleaned_[1]->Fill(dR);
@@ -134,7 +143,15 @@ void SimpleAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& esup) {
             }
           }
         } 
-      }   
+      }
+      if (matchingPho->isEB() ) {
+        h_NeutralHadronConeMultiplicity_[0]->Fill(nhadCounter);   
+        if (std::abs(mcEta_)<barrelEtaLimit_){
+          h_NeutralHadronConeMultiplicity_[1]->Fill(nhadCounter);
+        } else {
+          h_NeutralHadronConeMultiplicity_[2]->Fill(nhadCounter);
+        }
+      }
     } 
   }
 }

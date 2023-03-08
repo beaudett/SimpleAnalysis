@@ -14,6 +14,7 @@
 #include "RecoEgamma/EgammaMCTools/interface/PhotonMCTruthFinder.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TH1.h"
+#include "TH2.h"
 
 class SimpleAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 public:
@@ -49,6 +50,8 @@ private:
   TH1F * h_Pho_Eta_; 
   TH1F * h_Pho_Eta_Barrel_;
   TH1F * h_NeutralHadron_; 
+  TH2F * h_NeutralHadronEtaPt_;
+  TH1F * h_NeutralHadronConeMultiplicity_[3];
 };
 
 #endif 
