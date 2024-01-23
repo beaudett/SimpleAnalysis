@@ -23,10 +23,11 @@ public:
 
 private:
   //
-  edm::EDGetTokenT<reco::GsfElectronCollection> electronCollectionToken_;
+  edm::EDGetTokenT<reco::GsfElectronCollection> electronBarrelCollectionToken_;
+  edm::EDGetTokenT<reco::GsfElectronCollection> electronEndcapCollectionToken_;
 
-  TH2F * h_HoEvsEta_;
-  TH1F * h_HoE_;
+  TH2F * h_HoEvsEta_[3];
+  TH1F * h_HoE_[3];
 };
 
 #endif 
