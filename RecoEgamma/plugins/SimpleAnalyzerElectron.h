@@ -6,6 +6,8 @@
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
 #include "DataFormats/EgammaCandidates/interface/GsfElectronFwd.h"
+#include "DataFormats/EgammaCandidates/interface/Photon.h"
+#include "DataFormats/EgammaCandidates/interface/PhotonFwd.h"
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TH1.h"
@@ -25,9 +27,13 @@ private:
   //
   edm::EDGetTokenT<reco::GsfElectronCollection> electronBarrelCollectionToken_;
   edm::EDGetTokenT<reco::GsfElectronCollection> electronEndcapCollectionToken_;
+  edm::EDGetTokenT<reco::PhotonCollection> photonCollectionToken_;
 
   TH2F * h_HoEvsEta_[3];
-  TH1F * h_HoE_[3];
+  TH1F * h_HoE_[4];
+  TH1F * h_EtaHighHoE_; 
+  TH1F * h_Eta_;
+  TH1F * h_HoEPhotons_;
 };
 
 #endif 
