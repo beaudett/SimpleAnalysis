@@ -9,17 +9,20 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/Math/interface/deltaR.h"
-
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "SimpleAnalysis/RecoEgamma/plugins/SimpleAnalyzerElectron.h"
-
+#include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
+#include "CLHEP/Units/GlobalPhysicalConstants.h"
 
 SimpleAnalyzerElectron::SimpleAnalyzerElectron(const edm::ParameterSet& pset)
 :electronBarrelCollectionToken_(consumes<reco::GsfElectronCollection>(pset.getParameter<edm::InputTag>("electronBarrelCollection"))),
 electronEndcapCollectionToken_(consumes<reco::GsfElectronCollection>(pset.getParameter<edm::InputTag>("electronEndcapCollection"))),
 photonCollectionToken_(consumes<reco::PhotonCollection>(pset.getParameter<edm::InputTag>("photonCollection"))),
-superClusterCollectionToken_(consumes<reco::PhotonCollection>(pset.getParameter<edm::InputTag>("superClusterCollection")))
+superClusterCollectionToken_(consumes<reco::PhotonCollection>(pset.getParameter<edm::InputTag>("superClusterCollection"))),
+mcTruthCollectionToken_(consumes<reco::GenParticleCollection>(pset.getParameter<edm::InputTag>("mcTruthCollection")))
  {
     edm::Service<TFileService> fs;
+    h_RecEleNum_ = fs->make<TH1F>("RecEleNum","Number of electrons", 100,-0.5,99.5);
     h_HoE_[0] = fs->make<TH1F>("HoE_all", "H/E all ", 100 , 0. , 0.5);
     h_HoE_[1] = fs->make<TH1F>("HoE_barrel", "H/E barrel", 100 , 0. , 0.5);
     h_HoE_[2] = fs->make<TH1F>("HoE_endcaps", "H/E endcaps", 100 , 0. , 0.5);
@@ -45,6 +48,21 @@ superClusterCollectionToken_(consumes<reco::PhotonCollection>(pset.getParameter<
     h_HoEvsPt_[3] = fs->make<TH2F>("HoEvsPt_central_barrel", "H/E vs Pt central barrel", 80 , 0, 40.,100,0,0.5)  ; 
     h_EvsPt_ = fs->make<TH2F>("EvsPt_central_barrel", "E vs Pt central barrel", 80 , 0, 40.,50,0,10.)  ;
     h_HvsPt_ = fs->make<TH2F>("HvsPt_central_barrel", "H vs Pt central barrel", 80 , 0, 40.,50,0,10.)  ;
+    h_GsfPtoGenvsEta_ = fs->make<TH2F>("GsfPtoGenvsEta", "Track pT/Gen vs eta", 90 , -3., 3.,50,0.,1.5)  ;
+    h_GsfPtoGenvsAbsEta_ = fs->make<TH2F>("GsfPtoGenvsAbsEta", "Track pT/Gen vs |eta|", 90 , 0., 3.,50,0.,1.5)  ;
+    h_EoPvsEta_ = fs->make<TH2F>("EoPvsEta","E/p vs eta",90,-3,3.,50,0,1.5);
+    h_EoPvsAbsEta_ = fs->make<TH2F>("EoPvsAbsEta","E/p vs |eta|",90,0,3.,50,0,1.5);
+    h_GsfPtoGenvsEtaLR_ = fs->make<TH2F>("GsfPtoGenvsEtaLR", "Track pT/Gen vs eta", 90 , -3., 3.,500,0.,15)  ;
+    h_GsfPtoGenvsAbsEtaLR_ = fs->make<TH2F>("GsfPtoGenvsAbsEtaLR", "Track pT/Gen vs |eta|", 90 , 0., 3.,500,0.,15)  ;
+    h_EoPvsEtaLR_ = fs->make<TH2F>("EoPvsEtaLR","E/p vs eta",90,-3,3.,500,0,15);
+    h_EoPvsAbsEtaLR_ = fs->make<TH2F>("EoPvsAbsEtaLR","E/p vs |eta|",90,0,3.,500,0,15);
+    h_EoPExtended_ = fs->make<TH1F>("EoPExt", "E/p 2.5<|eta|<3", 80 , 0, 20.);
+    h_EoPExtendedNeg_ = fs->make<TH1F>("EoPExtNeg", "E/p -3 <eta< -2.5", 80 , 0, 20.);
+    h_EoPExtendedPos_ = fs->make<TH1F>("EoPExtPos", "E/p 2.5< eta <3", 80 , 0, 20.);
+    h_EoPvsEtaProf_ = fs->make<TProfile>("EoPvsEtaProf","E/p vs eta",50,-3,3.);
+    h_EoPvsEtaProfEoPMax_ = fs->make<TProfile>("EoPvsEtaProfMax","E/p vs eta E/p<5",50,-3,3.);;
+    matchingIDs_ = pset.getParameter<std::vector<int> >("MatchingID");
+    matchingMotherIDs_ = pset.getParameter<std::vector<int> >("MatchingMotherID");
     std::cout << " Created histograms " << std::endl;
  }
 
@@ -65,8 +83,7 @@ void SimpleAnalyzerElectron::analyze(const edm::Event& e, const edm::EventSetup&
     edm::LogError("SimpleAnalyzerElectron") << "Error! Can't get the Electron collection " << std::endl;
     return;
   }
-
-
+  h_RecEleNum_->Fill(electronBarrelHandle->size());
   for (unsigned int iE = 0; iE < electronBarrelHandle->size(); ++iE) {
     const reco::GsfElectron & cand = (*electronBarrelHandle)[iE];
    // if (cand.pt()<20) continue;
@@ -128,6 +145,84 @@ void SimpleAnalyzerElectron::analyze(const edm::Event& e, const edm::EventSetup&
       h_HoEPhotons_->Fill(cand.hcalOverEcal());
     }
   }
+
+  bool matchingID, matchingMotherID;
+
+  edm::Handle<reco::GenParticleCollection> mcParticlesHandle;  
+  e.getByToken(mcTruthCollectionToken_,mcParticlesHandle);
+  reco::GenParticleCollection::const_iterator mcIter;
+  for (mcIter = mcParticlesHandle->begin(); mcIter != mcParticlesHandle->end(); mcIter++) {
+    // select requested matching gen particle
+    matchingID = false;
+    for (unsigned int i = 0; i < matchingIDs_.size(); i++) {
+      if (mcIter->pdgId() == matchingIDs_[i]) {
+        matchingID = true;
+      }
+    }
+    if (matchingID) {
+        // select requested mother matching gen particle
+        // always include single particle with no mother
+      const reco::Candidate *mother = mcIter->mother();
+      matchingMotherID = false;
+   //   std::cout << " Mother PID " << mother->pdgId()  << std::endl;
+      for (unsigned int i = 0; i < matchingMotherIDs_.size(); i++) {
+     //   std::cout << " Testing MotherPID "<< matchingMotherIDs_[i] << std::endl;
+        if (mother == nullptr) {
+          matchingMotherID = true;
+          } else if (mother->pdgId() == matchingMotherIDs_[i]) {
+            if (mother->numberOfDaughters() <= 2) {
+              matchingMotherID = true;
+            }
+          }  // end of mother if test
+        }
+        if (matchingMotherID) {
+          if (std::abs(mcIter->eta()) > 4.) {
+            continue;
+          }
+          bool okGsfFound = false;
+          double gsfOkRatio = 999999.;
+          // find best matched electron
+          reco::GsfElectron bestGsfElectron;
+          for (unsigned int iE = 0; iE < electronEndcapHandle->size(); ++iE) {
+          const reco::GsfElectron & cand = (*electronEndcapHandle)[iE];        
+          double dphi = cand.phi() - mcIter->phi();
+          if (std::abs(dphi) > CLHEP::pi) {
+            dphi = dphi < 0 ? (CLHEP::twopi) + dphi : dphi - CLHEP::twopi;            
+          }
+          double deltaR2 = (cand.eta() - mcIter->eta()) * (cand.eta() - mcIter->eta()) + dphi * dphi;
+          if (deltaR2 < 0.0025) {
+            double tmpGsfRatio = cand.p() / mcIter->p();
+            if (std::abs(tmpGsfRatio - 1) < std::abs(gsfOkRatio - 1)) {
+              gsfOkRatio = tmpGsfRatio;
+              bestGsfElectron = cand;
+              okGsfFound = true;
+              }
+            }     // DeltaR3
+            if (okGsfFound && bestGsfElectron.pt() < 100 ){
+              h_GsfPtoGenvsEta_->Fill(mcIter->eta(),bestGsfElectron.gsfTrack()->innerMomentum().R()/mcIter->p());
+              h_GsfPtoGenvsAbsEta_->Fill(std::abs(mcIter->eta()),bestGsfElectron.gsfTrack()->innerMomentum().R()/mcIter->p());
+              h_EoPvsEta_->Fill(bestGsfElectron.eta(),bestGsfElectron.eSuperClusterOverP());
+              h_EoPvsEtaProf_->Fill(bestGsfElectron.eta(),bestGsfElectron.eSuperClusterOverP());
+              if(bestGsfElectron.eSuperClusterOverP() < 5.)
+                h_EoPvsEtaProfEoPMax_->Fill(bestGsfElectron.eta(),bestGsfElectron.eSuperClusterOverP());
+              h_EoPvsAbsEta_->Fill(std::abs(bestGsfElectron.eta()),bestGsfElectron.eSuperClusterOverP());
+              h_GsfPtoGenvsEtaLR_->Fill(mcIter->eta(),bestGsfElectron.gsfTrack()->innerMomentum().R()/mcIter->p());
+              h_GsfPtoGenvsAbsEtaLR_->Fill(std::abs(mcIter->eta()),bestGsfElectron.gsfTrack()->innerMomentum().R()/mcIter->p());
+              h_EoPvsEtaLR_->Fill(bestGsfElectron.eta(),bestGsfElectron.eSuperClusterOverP());
+              h_EoPvsAbsEtaLR_->Fill(std::abs(bestGsfElectron.eta()),bestGsfElectron.eSuperClusterOverP());
+              if (std::abs(bestGsfElectron.eta())>2.5 && std::abs(bestGsfElectron.eta())<3.)
+                h_EoPExtended_->Fill(bestGsfElectron.eSuperClusterOverP());
+              if (bestGsfElectron.eta() <-2.5 && bestGsfElectron.eta()>-3.)
+                h_EoPExtendedNeg_->Fill(bestGsfElectron.eSuperClusterOverP());
+              if (bestGsfElectron.eta() > 2.5 && bestGsfElectron.eta() < 3.)
+                h_EoPExtendedPos_->Fill(bestGsfElectron.eSuperClusterOverP());
+            }
+          } //loop on EE electrons
+        } //matching motherID 
+    } // loop on gen particles  
+  } //loop on MC particles
+
+
 
  ///// Get the SuperClusters
  // edm::Handle<reco::SuperClusterCollection> scHandle;

@@ -10,10 +10,13 @@
 #include "DataFormats/EgammaCandidates/interface/PhotonFwd.h"
 #include "DataFormats/EgammaReco/interface/SuperCluster.h"
 #include "DataFormats/EgammaReco/interface/SuperClusterFwd.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "TH1.h"
 #include "TH2.h"
+#include "TProfile.h"
 
 class SimpleAnalyzerElectron : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 public:
@@ -31,8 +34,11 @@ private:
   edm::EDGetTokenT<reco::GsfElectronCollection> electronEndcapCollectionToken_;
   edm::EDGetTokenT<reco::PhotonCollection> photonCollectionToken_;
   edm::EDGetTokenT<reco::PhotonCollection> superClusterCollectionToken_;
+  edm::EDGetTokenT<reco::GenParticleCollection> mcTruthCollectionToken_;                  // genParticles
+  std::vector<int> matchingIDs_;
+  std::vector<int> matchingMotherIDs_;
 
-
+  TH1F * h_RecEleNum_;
   TH2F * h_HoEvsEta_[3];
   TH2F * h_HoEvsPt_[4];
   TH1F * h_HoE_[5];
@@ -46,6 +52,23 @@ private:
   TH1F * h_E_;
   TH2F * h_HvsPt_;
   TH2F * h_EvsPt_;
+//  TProfile * h_GsfPtoGenvsEta_;
+//  TProfile * h_GsfPtoGenvsAbsEta_;
+//  TProfile * h_EoPvsEta_;
+//  TProfile * h_EoPvsAbsEta_;
+  TH2F * h_GsfPtoGenvsEta_;
+  TH2F * h_GsfPtoGenvsAbsEta_;
+  TH2F * h_EoPvsEta_;
+  TH2F * h_EoPvsAbsEta_;
+  TH2F * h_GsfPtoGenvsEtaLR_;
+  TH2F * h_GsfPtoGenvsAbsEtaLR_;
+  TH2F * h_EoPvsEtaLR_;
+  TH2F * h_EoPvsAbsEtaLR_;
+  TH1F * h_EoPExtended_;
+  TH1F * h_EoPExtendedNeg_;
+  TH1F * h_EoPExtendedPos_;
+  TProfile * h_EoPvsEtaProf_;
+  TProfile * h_EoPvsEtaProfEoPMax_;
 };
 
 #endif 

@@ -29,3 +29,4 @@
 <library name="SimpleAnalysisRecoEgammaPlugins" file="*.cc">
   <flags EDM_PLUGIN="1"/>
 </library>
+<flags CXXFLAGS="-g -O0"/> 
